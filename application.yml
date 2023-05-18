@@ -1,0 +1,10 @@
+mysql:
+  ip: 106.14.18.18
+  port: 3306
+  database: interest_arbitrage
+  params: charset=utf8mb4&parseTime=True&loc=Local
+  username: root
+  password: pass1234
+  maxIdleConnCount: 10 # 连接池空闲连接的最大数量
+  maxOpenConnCount: 100 # 连接最大数量
+  connMaxLifetime: 600000 # 连接最大可复用时间 (ms)
