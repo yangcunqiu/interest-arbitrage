@@ -2,15 +2,15 @@ package main
 
 import (
 	"github.com/fsnotify/fsnotify"
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"interest-arbitrage/global"
 	"interest-arbitrage/model"
+	"interest-arbitrage/router"
 	"interest-arbitrage/server"
 	"log"
-	"os"
 	"strconv"
 	"time"
 )
@@ -21,12 +21,29 @@ func main() {
 	initDB()
 	node := initNode()
 	initPrice(node)
-	time.Sleep(time.Hour)
+	initRouter()
+}
+
+func initRouter() {
+	r := gin.Default()
+	// 注册路由
+	router.RegisterRouter(r)
+	var addr string
+	if global.Config.Server.Port == 0 {
+		addr = ":8080"
+	} else {
+		addr = ":" + strconv.Itoa(int(global.Config.Server.Port))
+	}
+	err := r.Run(addr)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func initPrice(node *server.NodeServer) {
 	priceServer := server.GetPriceServer(node)
 	priceServer.Start()
+	server.UsablePriceServer = priceServer
 }
 
 func initEnv() {
@@ -66,17 +83,17 @@ func initNode() *server.NodeServer {
 
 func initDB() {
 	// gorm日志
-	gormLogger := logger.New(
-		log.New(os.Stdout, "/r/n", log.LstdFlags),
-		logger.Config{
-			SlowThreshold: time.Second, // 慢SQL阈值
-			LogLevel:      logger.Info,
-			Colorful:      true,
-		},
-	)
+	// gormLogger := logger.New(
+	// 	log.New(os.Stdout, "sql: ", log.LstdFlags),
+	// 	logger.Config{
+	// 		SlowThreshold: time.Second, // 慢SQL阈值
+	// 		LogLevel:      logger.Info,
+	// 		Colorful:      true,
+	// 	},
+	// )
 	db, err := gorm.Open(mysql.Open(getDsn()), &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true, // 禁用外键
-		Logger:                                   gormLogger,
+		// Logger:                                   gormLogger,
 	})
 	sqlDB, err := db.DB()
 	if err != nil {
@@ -87,7 +104,7 @@ func initDB() {
 	sqlDB.SetConnMaxLifetime(time.Duration(global.Config.Mysql.ConnMaxLifetime) * time.Millisecond)
 	global.DB = db
 	// 同步表结构
-	//syncTable()
+	// syncTable()
 }
 
 func syncTable() {

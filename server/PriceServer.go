@@ -8,16 +8,22 @@ import (
 	"log"
 	"math"
 	"math/big"
+	"time"
 )
+
+var UsablePriceServer *PriceServer
 
 type PriceServer struct {
 	chainLinkConfig []model.ChainLinkConfig
 	node            *NodeServer
+	stop            chan struct{}
 }
 
 func GetPriceServer(node *NodeServer) *PriceServer {
 	return &PriceServer{
-		node: node,
+		chainLinkConfig: make([]model.ChainLinkConfig, 0),
+		node:            node,
+		stop:            make(chan struct{}),
 	}
 }
 
@@ -29,11 +35,35 @@ func (p *PriceServer) Start() {
 
 	for _, config := range p.chainLinkConfig {
 		// 获取价格
-		go getPrice(p.node.client, config)
+		go getPrice(p.node.client, config, p.stop)
 	}
 }
 
-func getPrice(client *ethclient.Client, config model.ChainLinkConfig) {
+func (p *PriceServer) Stop() {
+	p.stop <- struct{}{}
+}
+
+func (p *PriceServer) Restart() {
+	p.Stop()
+	p.chainLinkConfig = []model.ChainLinkConfig{}
+	p.Start()
+}
+
+func getPrice(client *ethclient.Client, config model.ChainLinkConfig, stop chan struct{}) {
+	ticker := time.NewTicker(5 * time.Minute)
+	for {
+		select {
+		case <-ticker.C:
+			priceTask(client, config)
+		case <-stop:
+			ticker.Stop()
+			return
+		}
+	}
+}
+
+func priceTask(client *ethclient.Client, config model.ChainLinkConfig) {
+	log.Println("getPrice start ", config.PairName)
 	price, err := handler.GetToBigInt(client, config.ContractAddr, config.PriceFuncName, bytes.NewBufferString(config.AbiJson).Bytes())
 	if err != nil {
 		log.Printf("failed to getPrice: %v", err)
@@ -42,6 +72,7 @@ func getPrice(client *ethclient.Client, config model.ChainLinkConfig) {
 	fPrice := new(big.Float)
 	fPrice.SetString(price.String())
 	readPrice := new(big.Float).Quo(fPrice, big.NewFloat(math.Pow10(config.Decimals)))
+	log.Printf("getPrice success, pairName: %s, readPrice: %v", config.PairName, readPrice)
 
 	tp := model.TokenPrice{
 		PairName:  config.PairName,
@@ -51,5 +82,5 @@ func getPrice(client *ethclient.Client, config model.ChainLinkConfig) {
 		ChainId:   config.ChainId,
 		Type:      config.Type,
 	}
-	model.SaveTokenPrice(&tp)
+	model.SaveOrUpdateTokenPrice(&tp)
 }

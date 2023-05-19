@@ -1,5 +1,6 @@
 package config
 
 type Config struct {
-	Mysql Mysql `yaml:"mysql"`
+	Server Server `yaml:"server"`
+	Mysql  Mysql  `yaml:"mysql"`
 }

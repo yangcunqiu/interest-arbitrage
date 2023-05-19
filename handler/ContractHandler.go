@@ -33,7 +33,7 @@ func GetToBigInt(client *ethclient.Client, contractAddr string, funcName string,
 }
 
 func get(client *ethclient.Client, contractAddr string, funcName string, contractABI abi.ABI) ([]byte, error) {
-
+	log.Printf("contract call, contractAddress: %s, funcName: %s", contractAddr, funcName)
 	contractAddress := common.HexToAddress(contractAddr)
 	data, _ := contractABI.Pack(funcName)
 	callMsg := ethereum.CallMsg{
@@ -41,5 +41,10 @@ func get(client *ethclient.Client, contractAddr string, funcName string, contrac
 		Data: data,
 	}
 	// call
-	return client.CallContract(context.Background(), callMsg, nil)
+	output, err := client.CallContract(context.Background(), callMsg, nil)
+	if err != nil {
+		log.Printf("failed to call contract, contractAddress: %s, funcName: %s, err: %v", contractAddr, funcName, err)
+		return nil, err
+	}
+	return output, nil
 }
