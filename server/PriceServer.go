@@ -53,18 +53,18 @@ func (p *PriceServer) Start() {
 	}
 
 	// 获取chainLink价格
-	for _, config := range p.chainLinkConfig {
-		go getChainLinkPrice(p.node.client, config, p.stop)
-	}
+	//for _, config := range p.chainLinkConfig {
+	//	go getChainLinkPrice(p.node.client, config, p.stop)
+	//}
 
 	// 获取uniswap价格
 	for _, config := range p.uniswapV2PriceConfig {
-		go getUniswapPrice(p.node.client, config, p.stop)
+		go getUniswapPrice(p.node.client, &config, p.stop)
 	}
 
 }
 
-func getUniswapPrice(client *ethclient.Client, config model.UniswapV2PriceConfig, stop chan struct{}) {
+func getUniswapPrice(client *ethclient.Client, config *model.UniswapV2PriceConfig, stop chan struct{}) {
 	ticker := time.NewTicker(5 * time.Minute)
 	for {
 		select {
@@ -77,7 +77,7 @@ func getUniswapPrice(client *ethclient.Client, config model.UniswapV2PriceConfig
 	}
 }
 
-func uniswapPriceTask(client *ethclient.Client, config model.UniswapV2PriceConfig) {
+func uniswapPriceTask(client *ethclient.Client, config *model.UniswapV2PriceConfig) {
 	// 获取pair地址
 	pairAddress := config.PairAddress
 	if pairAddress == "" {
@@ -89,20 +89,69 @@ func uniswapPriceTask(client *ethclient.Client, config model.UniswapV2PriceConfi
 		}
 		pairAddress = address.String()
 		config.PairAddress = pairAddress
-		model.UpdateUniswapPriceConfig(&config)
+		model.UpdateUniswapPriceConfig(config)
 	}
 
-	var funcName string
-	if config.Token0Address < config.Token1Address {
-		funcName = "price0CumulativeLast"
-	} else {
-		funcName = "price1CumulativeLast"
-	}
-	token0CumulativeLast, err := handler.GetToBigInt(client, pairAddress, funcName, bytes.NewBufferString(uniswapV2PairABI).Bytes())
+	price0CumulativeLast, err := handler.GetToBigInt(client, pairAddress, "price0CumulativeLast", bytes.NewBufferString(uniswapV2PairABI).Bytes())
+	price1CumulativeLast, err := handler.GetToBigInt(client, pairAddress, "price1CumulativeLast", bytes.NewBufferString(uniswapV2PairABI).Bytes())
 	if err != nil {
-		log.Printf("failed to get %s: %v", funcName, err)
+		log.Printf("failed to get cumulativeLast: %v", err)
 		return
 	}
+	reserve, err := handler.GetReserve(client, pairAddress, bytes.NewBufferString(uniswapV2PairABI).Bytes())
+	if err != nil {
+		log.Printf("failed to get reserve: %v", err)
+		return
+	}
+
+	var price0Average string
+	var price1Average string
+	// 查下上一次的
+	last := model.GetTokenCumulativeLastByPairAddress(config.PairAddress)
+	if last != nil {
+		price0Average = last.Price0Average
+		price1Average = last.Price1Average
+		// 计算价格
+		timeElapsed := reserve.BlockTimestamp - last.BlockTimestampLast
+		if timeElapsed > 0 {
+			decimalsBigInt := new(big.Int)
+			pow10 := math.Pow10(config.Decimals)
+			decimals := decimalsBigInt.SetInt64(int64(pow10))
+			//decimals, _ := decimalsBigInt.SetString("1000000000000000000", 10)
+
+			// token0
+			result0 := new(big.Int)
+			timeElapsedBig := big.NewInt(int64(timeElapsed))
+
+			bigInt0 := new(big.Int)
+			price0ByPairAddress, _ := bigInt0.SetString(last.Price0CumulativeLast, 10)
+
+			result0.Sub(price0CumulativeLast, price0ByPairAddress).Div(result0, timeElapsedBig).Div(result0, decimals)
+			price0Average = result0.String()
+
+			// token1
+			result1 := new(big.Int)
+			bigInt1 := new(big.Int)
+			price1ByPairAddress, _ := bigInt1.SetString(last.Price1CumulativeLast, 10)
+
+			result1.Sub(price1CumulativeLast, price1ByPairAddress).Div(result1, timeElapsedBig).Div(result1, decimals)
+			price1Average = result1.String()
+		}
+	}
+	// 保存
+	tcl := &model.UniswapV2TokenCumulativeLast{
+		PairAddress:          pairAddress,
+		Price0Average:        price0Average,
+		Price1Average:        price1Average,
+		Reserve0:             reserve.Reserve0.String(),
+		Reserve1:             reserve.Reserve1.String(),
+		Price0CumulativeLast: price0CumulativeLast.String(),
+		Price1CumulativeLast: price1CumulativeLast.String(),
+		BlockTimestampLast:   reserve.BlockTimestamp,
+	}
+	model.SaveOrUpdateTokenCumulativeLast(tcl)
+
+	// 解析价格
 
 }
 

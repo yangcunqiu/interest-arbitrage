@@ -11,6 +11,35 @@ import (
 	"math/big"
 )
 
+type Reserve struct {
+	Reserve0       *big.Int `abi:"_reserve0"`
+	Reserve1       *big.Int `abi:"_reserve1"`
+	BlockTimestamp uint32   `abi:"_blockTimestampLast"`
+}
+
+func GetReserve(client *ethclient.Client, contractAddr string, abiJson []byte) (*Reserve, error) {
+	// 解析abi
+	contractABI, err := abi.JSON(bytes.NewReader(abiJson))
+	if err != nil {
+		log.Fatalf("Failed to parse contract ABI: %v", err)
+	}
+
+	data, _ := contractABI.Pack("getReserves")
+	output, err := get(client, contractAddr, "getReserves", contractABI, data)
+	if err != nil {
+		return nil, err
+	}
+
+	result := new(Reserve)
+	err = contractABI.UnpackIntoInterface(result, "getReserves", output)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("call contract result: %v", result)
+	return result, nil
+
+}
+
 func GetToAddress(client *ethclient.Client, contractAddr string, funcName string, abiJson []byte, params ...interface{}) (*common.Address, error) {
 	// 解析abi
 	contractABI, err := abi.JSON(bytes.NewReader(abiJson))
@@ -24,13 +53,12 @@ func GetToAddress(client *ethclient.Client, contractAddr string, funcName string
 		return nil, err
 	}
 
-	var result *common.Address
-	err = contractABI.UnpackIntoInterface(result, "getPair", output)
+	result := common.BytesToAddress(output)
 	if err != nil {
 		log.Fatalf("failed to unpack result: %v", err)
 	}
 	log.Printf("call contract result: %v", result.String())
-	return result, nil
+	return &result, nil
 }
 
 func GetToBigInt(client *ethclient.Client, contractAddr string, funcName string, abiJson []byte) (*big.Int, error) {

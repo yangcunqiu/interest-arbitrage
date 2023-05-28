@@ -104,13 +104,15 @@ func initDB() {
 	sqlDB.SetConnMaxLifetime(time.Duration(global.Config.Mysql.ConnMaxLifetime) * time.Millisecond)
 	global.DB = db
 	// 同步表结构
-	// syncTable()
+	syncTable()
 }
 
 func syncTable() {
 	err := global.DB.AutoMigrate(
 		&model.ChainLinkConfig{},
 		&model.TokenPrice{},
+		&model.UniswapV2PriceConfig{},
+		&model.UniswapV2TokenCumulativeLast{},
 	)
 	if err != nil {
 		panic(err)
