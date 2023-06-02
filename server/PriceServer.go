@@ -53,9 +53,9 @@ func (p *PriceServer) Start() {
 	}
 
 	// 获取chainLink价格
-	//for _, config := range p.chainLinkConfig {
+	// for _, config := range p.chainLinkConfig {
 	//	go getChainLinkPrice(p.node.client, config, p.stop)
-	//}
+	// }
 
 	// 获取uniswap价格
 	for _, config := range p.uniswapV2PriceConfig {
@@ -112,13 +112,19 @@ func uniswapPriceTask(client *ethclient.Client, config *model.UniswapV2PriceConf
 		price0Average = last.Price0Average
 		price1Average = last.Price1Average
 		// 计算价格
+		block := handler.GetBlockHeader(client)
+		currentBlockTimestamp := uint(math.Mod(float64(block.Time), math.Pow(2, 32)))
+		if currentBlockTimestamp != uint(reserve.BlockTimestamp) {
+			b := fraction(reserve.Reserve0, reserve.Reserve1)
+		}
+
+		getCurrentCumulativePrices(block.Time, reserve.BlockTimestamp, price0CumulativeLast, price1CumulativeLast)
+
 		timeElapsed := reserve.BlockTimestamp - last.BlockTimestampLast
 		if timeElapsed > 0 {
 			decimalsBigInt := new(big.Int)
 			pow10 := math.Pow10(config.Decimals)
 			decimals := decimalsBigInt.SetInt64(int64(pow10))
-			//decimals, _ := decimalsBigInt.SetString("1000000000000000000", 10)
-
 			// token0
 			result0 := new(big.Int)
 			timeElapsedBig := big.NewInt(int64(timeElapsed))
@@ -152,6 +158,30 @@ func uniswapPriceTask(client *ethclient.Client, config *model.UniswapV2PriceConf
 	model.SaveOrUpdateTokenCumulativeLast(tcl)
 
 	// 解析价格
+
+}
+
+func fraction(numerator *big.Int, denominator *big.Int) *big.Int {
+	result := new(big.Int)
+
+	big1 := new(big.Int)
+	big1.SetInt64(1)
+
+	big144 := new(big.Int)
+	big144.SetInt64(int64(math.Pow(2, 144))).Sub(big144, big1)
+
+	big112 := new(big.Int)
+	big112.SetInt64(int64(math.Pow(2, 112)))
+
+	if numerator.Cmp(big144) <= 0 {
+		result = numerator.Mul(numerator, big144).Div(numerator, denominator)
+	} else {
+		result = numerator.Mul(numerator, big112).Div(numerator, denominator)
+	}
+	return result
+}
+
+func getCurrentCumulativePrices(currentTimestamp uint64, reserveTimestamp uint32, price0Cumulative *big.Int, price1Cumulative *big.Int) {
 
 }
 

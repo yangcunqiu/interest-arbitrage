@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"log"
 	"math/big"
@@ -15,6 +16,14 @@ type Reserve struct {
 	Reserve0       *big.Int `abi:"_reserve0"`
 	Reserve1       *big.Int `abi:"_reserve1"`
 	BlockTimestamp uint32   `abi:"_blockTimestampLast"`
+}
+
+func GetBlockHeader(client *ethclient.Client) *types.Header {
+	headerByNumber, err := client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		log.Printf("failed to get block header: %v", err)
+	}
+	return headerByNumber
 }
 
 func GetReserve(client *ethclient.Client, contractAddr string, abiJson []byte) (*Reserve, error) {
