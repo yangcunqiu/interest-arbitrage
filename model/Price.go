@@ -13,6 +13,7 @@ type Price struct {
 	Value         string `gorm:"type:varchar(50);not null;comment:原始价格"`
 	Decimals      int    `gorm:"type:int;not null;comment:精度"`
 	ReadablePrice string `gorm:"type:varchar(50);not null;comment:易读价格"`
+	Markup        string `gorm:"type:varchar(10);comment:涨幅"`
 	Unit          string `gorm:"type:varchar(50);not null;comment:价格单位"`
 	SourceType    int    `gorm:"type:int;not null;comment:来源类型(0 chainLink, 1 uniswap)"`
 	ChainId       int    `gorm:"type:int;not null;comment:链id"`

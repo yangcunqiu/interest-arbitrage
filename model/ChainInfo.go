@@ -10,6 +10,7 @@ type ChainInfo struct {
 	gorm.Model
 	ChainId   int    `gorm:"type:int;not null;unique;comment:链id"`
 	ChainName string `gorm:"type:varchar(50);not null;comment:链名称"`
+	Currency  string `gorm:"type:varchar(50);not null;comment:原生币"`
 	Type      int    `gorm:"type:int;not null;comment:类型(0 主网, 1 测试网)"`
 }
 

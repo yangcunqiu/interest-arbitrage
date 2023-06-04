@@ -113,6 +113,8 @@ func syncTable() {
 		&model.TokenPrice{},
 		&model.UniswapV2PriceConfig{},
 		&model.UniswapV2TokenCumulativeLast{},
+		&model.Price{},
+		&model.ChainInfo{},
 	)
 	if err != nil {
 		panic(err)

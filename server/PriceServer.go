@@ -2,8 +2,9 @@ package server
 
 import (
 	"bytes"
-	"github.com/ethereum/go-ethereum/common"
+	"fmt"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"interest-arbitrage/constant"
 	"interest-arbitrage/handler"
 	"interest-arbitrage/model"
 	"log"
@@ -53,113 +54,112 @@ func (p *PriceServer) Start() {
 	}
 
 	// 获取chainLink价格
-	// for _, config := range p.chainLinkConfig {
-	//	go getChainLinkPrice(p.node.client, config, p.stop)
-	// }
+	for _, config := range p.chainLinkConfig {
+		go getChainLinkPrice(p.node.client, p.node.chainId, config, p.stop)
+	}
 
 	// 获取uniswap价格
-	for _, config := range p.uniswapV2PriceConfig {
-		go getUniswapPrice(p.node.client, &config, p.stop)
-	}
-
+	//for _, config := range p.uniswapV2PriceConfig {
+	//	go getUniswapPrice(p.node.client, p.node.chainId, &config, p.stop)
+	//}
 }
 
-func getUniswapPrice(client *ethclient.Client, config *model.UniswapV2PriceConfig, stop chan struct{}) {
-	ticker := time.NewTicker(5 * time.Minute)
-	for {
-		select {
-		case <-ticker.C:
-			uniswapPriceTask(client, config)
-		case <-stop:
-			ticker.Stop()
-			return
-		}
-	}
-}
+//func getUniswapPrice(client *ethclient.Client, chainId *big.Int, config *model.UniswapV2PriceConfig, stop chan struct{}) {
+//	ticker := time.NewTicker(5 * time.Minute)
+//	for {
+//		select {
+//		case <-ticker.C:
+//			uniswapPriceTask(client, chainId, config)
+//		case <-stop:
+//			ticker.Stop()
+//			return
+//		}
+//	}
+//}
 
-func uniswapPriceTask(client *ethclient.Client, config *model.UniswapV2PriceConfig) {
-	// 获取pair地址
-	pairAddress := config.PairAddress
-	if pairAddress == "" {
-		address, err := handler.GetToAddress(client, uniswapV2FactoryAddress, "getPair", bytes.NewBufferString(uniswapV2FactoryABI).Bytes(),
-			common.HexToAddress(config.Token0Address), common.HexToAddress(config.Token1Address))
-		if err != nil {
-			log.Printf("failed to get pair: %v", err)
-			return
-		}
-		pairAddress = address.String()
-		config.PairAddress = pairAddress
-		model.UpdateUniswapPriceConfig(config)
-	}
-
-	price0CumulativeLast, err := handler.GetToBigInt(client, pairAddress, "price0CumulativeLast", bytes.NewBufferString(uniswapV2PairABI).Bytes())
-	price1CumulativeLast, err := handler.GetToBigInt(client, pairAddress, "price1CumulativeLast", bytes.NewBufferString(uniswapV2PairABI).Bytes())
-	if err != nil {
-		log.Printf("failed to get cumulativeLast: %v", err)
-		return
-	}
-	reserve, err := handler.GetReserve(client, pairAddress, bytes.NewBufferString(uniswapV2PairABI).Bytes())
-	if err != nil {
-		log.Printf("failed to get reserve: %v", err)
-		return
-	}
-
-	var price0Average string
-	var price1Average string
-	// 查下上一次的
-	last := model.GetTokenCumulativeLastByPairAddress(config.PairAddress)
-	if last != nil {
-		price0Average = last.Price0Average
-		price1Average = last.Price1Average
-		// 计算价格
-		block := handler.GetBlockHeader(client)
-		currentBlockTimestamp := uint(math.Mod(float64(block.Time), math.Pow(2, 32)))
-		if currentBlockTimestamp != uint(reserve.BlockTimestamp) {
-			b := fraction(reserve.Reserve0, reserve.Reserve1)
-		}
-
-		getCurrentCumulativePrices(block.Time, reserve.BlockTimestamp, price0CumulativeLast, price1CumulativeLast)
-
-		timeElapsed := reserve.BlockTimestamp - last.BlockTimestampLast
-		if timeElapsed > 0 {
-			decimalsBigInt := new(big.Int)
-			pow10 := math.Pow10(config.Decimals)
-			decimals := decimalsBigInt.SetInt64(int64(pow10))
-			// token0
-			result0 := new(big.Int)
-			timeElapsedBig := big.NewInt(int64(timeElapsed))
-
-			bigInt0 := new(big.Int)
-			price0ByPairAddress, _ := bigInt0.SetString(last.Price0CumulativeLast, 10)
-
-			result0.Sub(price0CumulativeLast, price0ByPairAddress).Div(result0, timeElapsedBig).Div(result0, decimals)
-			price0Average = result0.String()
-
-			// token1
-			result1 := new(big.Int)
-			bigInt1 := new(big.Int)
-			price1ByPairAddress, _ := bigInt1.SetString(last.Price1CumulativeLast, 10)
-
-			result1.Sub(price1CumulativeLast, price1ByPairAddress).Div(result1, timeElapsedBig).Div(result1, decimals)
-			price1Average = result1.String()
-		}
-	}
-	// 保存
-	tcl := &model.UniswapV2TokenCumulativeLast{
-		PairAddress:          pairAddress,
-		Price0Average:        price0Average,
-		Price1Average:        price1Average,
-		Reserve0:             reserve.Reserve0.String(),
-		Reserve1:             reserve.Reserve1.String(),
-		Price0CumulativeLast: price0CumulativeLast.String(),
-		Price1CumulativeLast: price1CumulativeLast.String(),
-		BlockTimestampLast:   reserve.BlockTimestamp,
-	}
-	model.SaveOrUpdateTokenCumulativeLast(tcl)
-
-	// 解析价格
-
-}
+//func uniswapPriceTask(client *ethclient.Client, chainId *big.Int, config *model.UniswapV2PriceConfig) {
+//	// 获取pair地址
+//	pairAddress := config.PairAddress
+//	if pairAddress == "" {
+//		address, err := handler.GetToAddress(client, uniswapV2FactoryAddress, "getPair", bytes.NewBufferString(uniswapV2FactoryABI).Bytes(),
+//			common.HexToAddress(config.Token0Address), common.HexToAddress(config.Token1Address))
+//		if err != nil {
+//			log.Printf("failed to get pair: %v", err)
+//			return
+//		}
+//		pairAddress = address.String()
+//		config.PairAddress = pairAddress
+//		model.UpdateUniswapPriceConfig(config)
+//	}
+//
+//	price0CumulativeLast, err := handler.GetToBigInt(client, pairAddress, "price0CumulativeLast", bytes.NewBufferString(uniswapV2PairABI).Bytes())
+//	price1CumulativeLast, err := handler.GetToBigInt(client, pairAddress, "price1CumulativeLast", bytes.NewBufferString(uniswapV2PairABI).Bytes())
+//	if err != nil {
+//		log.Printf("failed to get cumulativeLast: %v", err)
+//		return
+//	}
+//	reserve, err := handler.GetReserve(client, pairAddress, bytes.NewBufferString(uniswapV2PairABI).Bytes())
+//	if err != nil {
+//		log.Printf("failed to get reserve: %v", err)
+//		return
+//	}
+//
+//	var price0Average string
+//	var price1Average string
+//	// 查下上一次的
+//	last := model.GetTokenCumulativeLastByPairAddress(config.PairAddress)
+//	if last != nil {
+//		price0Average = last.Price0Average
+//		price1Average = last.Price1Average
+//		// 计算价格
+//		block := handler.GetBlockHeader(client)
+//		currentBlockTimestamp := uint(math.Mod(float64(block.Time), math.Pow(2, 32)))
+//		if currentBlockTimestamp != uint(reserve.BlockTimestamp) {
+//			b := fraction(reserve.Reserve0, reserve.Reserve1)
+//		}
+//
+//		getCurrentCumulativePrices(block.Time, reserve.BlockTimestamp, price0CumulativeLast, price1CumulativeLast)
+//
+//		timeElapsed := reserve.BlockTimestamp - last.BlockTimestampLast
+//		if timeElapsed > 0 {
+//			decimalsBigInt := new(big.Int)
+//			pow10 := math.Pow10(config.Decimals)
+//			decimals := decimalsBigInt.SetInt64(int64(pow10))
+//			// token0
+//			result0 := new(big.Int)
+//			timeElapsedBig := big.NewInt(int64(timeElapsed))
+//
+//			bigInt0 := new(big.Int)
+//			price0ByPairAddress, _ := bigInt0.SetString(last.Price0CumulativeLast, 10)
+//
+//			result0.Sub(price0CumulativeLast, price0ByPairAddress).Div(result0, timeElapsedBig).Div(result0, decimals)
+//			price0Average = result0.String()
+//
+//			// token1
+//			result1 := new(big.Int)
+//			bigInt1 := new(big.Int)
+//			price1ByPairAddress, _ := bigInt1.SetString(last.Price1CumulativeLast, 10)
+//
+//			result1.Sub(price1CumulativeLast, price1ByPairAddress).Div(result1, timeElapsedBig).Div(result1, decimals)
+//			price1Average = result1.String()
+//		}
+//	}
+//	// 保存
+//	tcl := &model.UniswapV2TokenCumulativeLast{
+//		PairAddress:          pairAddress,
+//		Price0Average:        price0Average,
+//		Price1Average:        price1Average,
+//		Reserve0:             reserve.Reserve0.String(),
+//		Reserve1:             reserve.Reserve1.String(),
+//		Price0CumulativeLast: price0CumulativeLast.String(),
+//		Price1CumulativeLast: price1CumulativeLast.String(),
+//		BlockTimestampLast:   reserve.BlockTimestamp,
+//	}
+//	model.SaveOrUpdateTokenCumulativeLast(tcl)
+//
+//	// 解析价格
+//
+//}
 
 func fraction(numerator *big.Int, denominator *big.Int) *big.Int {
 	result := new(big.Int)
@@ -185,12 +185,13 @@ func getCurrentCumulativePrices(currentTimestamp uint64, reserveTimestamp uint32
 
 }
 
-func getChainLinkPrice(client *ethclient.Client, config model.ChainLinkConfig, stop chan struct{}) {
+func getChainLinkPrice(client *ethclient.Client, chainId *big.Int, config model.ChainLinkConfig, stop chan struct{}) {
+	chainLinkPriceTask(client, chainId, config)
 	ticker := time.NewTicker(5 * time.Minute)
 	for {
 		select {
 		case <-ticker.C:
-			chainLinkPriceTask(client, config)
+			chainLinkPriceTask(client, chainId, config)
 		case <-stop:
 			ticker.Stop()
 			return
@@ -198,25 +199,46 @@ func getChainLinkPrice(client *ethclient.Client, config model.ChainLinkConfig, s
 	}
 }
 
-func chainLinkPriceTask(client *ethclient.Client, config model.ChainLinkConfig) {
+func chainLinkPriceTask(client *ethclient.Client, chainId *big.Int, config model.ChainLinkConfig) {
+	// 获取价格
 	log.Println("getChainLinkPrice start ", config.PairName)
 	price, err := handler.GetToBigInt(client, config.ContractAddr, config.PriceFuncName, bytes.NewBufferString(config.AbiJson).Bytes())
 	if err != nil {
 		log.Printf("failed to getChainLinkPrice: %v", err)
 	}
-	// 保存价格
+	// 解析价格
 	fPrice := new(big.Float)
 	fPrice.SetString(price.String())
 	readPrice := new(big.Float).Quo(fPrice, big.NewFloat(math.Pow10(config.Decimals)))
 	log.Printf("getChainLinkPrice success, pairName: %s, readPrice: %v", config.PairName, readPrice)
 
-	tp := model.TokenPrice{
-		PairName:  config.PairName,
-		Decimals:  config.Decimals,
-		Price:     price.String(),
-		ReadPrice: readPrice.String(),
-		ChainId:   config.ChainId,
-		Type:      config.Type,
+	// 保存价格
+	p := model.Price{
+		TokenName:     config.TokenName,
+		TokenAddress:  config.TokenAddress,
+		Value:         price.String(),
+		Decimals:      config.Decimals,
+		ReadablePrice: readPrice.String(),
+		Unit:          config.Unit,
+		SourceType:    constant.CHAIN_LINKE,
+		ChainId:       int(chainId.Int64()),
 	}
-	model.SaveOrUpdateTokenPrice(&tp)
+
+	byTokenAddress := model.GetPriceByTokenAddress(config.TokenName)
+	if byTokenAddress == nil {
+		model.SavePrice(&p)
+		return
+	}
+
+	// 计算涨幅
+	biL, _ := new(big.Int).SetString(byTokenAddress.Value, 10)
+	sub := new(big.Int).Sub(price, biL)
+	bfs := new(big.Float).SetInt(sub)
+	bfL := new(big.Float).SetInt(biL)
+	quo := new(big.Float).Quo(bfs, bfL)
+	result := quo.Mul(quo, big.NewFloat(100))
+	byTokenAddress.Markup = fmt.Sprintf("%.2f%%", result)
+	byTokenAddress.Value = price.String()
+	byTokenAddress.ReadablePrice = readPrice.String()
+	model.UpdatePrice(byTokenAddress)
 }
