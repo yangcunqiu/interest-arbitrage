@@ -7,9 +7,11 @@ import (
 	"math/big"
 )
 
+var UsableNodeServer *NodeServer
+
 type NodeServer struct {
 	url     string
-	client  *ethclient.Client
+	Client  *ethclient.Client
 	chainId *big.Int
 }
 
@@ -28,6 +30,6 @@ func (n *NodeServer) Start() {
 	if err != nil {
 		log.Fatalf("failed to get chainId: %v", err)
 	}
-	n.client = client
+	n.Client = client
 	n.chainId = chainID
 }

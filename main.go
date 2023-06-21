@@ -6,10 +6,13 @@ import (
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"interest-arbitrage/constant"
 	"interest-arbitrage/global"
 	"interest-arbitrage/model"
+	"interest-arbitrage/model/entity"
 	"interest-arbitrage/router"
 	"interest-arbitrage/server"
+	"interest-arbitrage/utils"
 	"log"
 	"strconv"
 	"time"
@@ -19,9 +22,22 @@ func main() {
 	initConfig()
 	initEnv()
 	initDB()
-	node := initNode()
-	initPrice(node)
+	_ = initNode()
+	// initPrice(node)
+	initABI()
 	initRouter()
+}
+
+func initABI() {
+	global.ContractInfoMap = make(map[string]*model.ContractInfo)
+	for _, info := range constant.ContractInfos {
+		contractABIByFile, err := utils.GetContractABIByFile(info.ABIPath)
+		if err != nil {
+			log.Fatalf("fialed to get abi, path: %s, err: %s", info.ABIPath, err)
+		}
+		info.ABI = contractABIByFile
+		global.ContractInfoMap[info.Name] = info
+	}
 }
 
 func initRouter() {
@@ -76,8 +92,9 @@ func initEnv() {
 }
 
 func initNode() *server.NodeServer {
-	nodeServer := server.GetDefaultNodeServer(global.Env.AlchemyUrl)
+	nodeServer := server.GetDefaultNodeServer(global.Env.NodeUrl)
 	nodeServer.Start()
+	server.UsableNodeServer = nodeServer
 	return nodeServer
 }
 
@@ -109,12 +126,12 @@ func initDB() {
 
 func syncTable() {
 	err := global.DB.AutoMigrate(
-		&model.ChainLinkConfig{},
-		&model.TokenPrice{},
-		&model.UniswapV2PriceConfig{},
-		&model.UniswapV2TokenCumulativeLast{},
-		&model.Price{},
-		&model.ChainInfo{},
+		&entity.ChainLinkConfig{},
+		&entity.TokenPrice{},
+		&entity.UniswapV2PriceConfig{},
+		&entity.UniswapV2TokenCumulativeLast{},
+		&entity.Price{},
+		&entity.ChainInfo{},
 	)
 	if err != nil {
 		panic(err)

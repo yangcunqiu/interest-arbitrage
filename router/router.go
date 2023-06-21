@@ -8,16 +8,28 @@ import (
 )
 
 func RegisterRouter(r *gin.Engine) {
-	routerGroup := r.Group(global.Config.Server.ContextPath)
+	rootGroup := r.Group(global.Config.Server.ContextPath)
 	{
-		routerGroup.GET("/ping", func(c *gin.Context) {
+		rootGroup.GET("/ping", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"message": "pong",
 			})
 		})
 
-		priceGroup := routerGroup.Group("/price")
-		priceGroup.POST("/restart", service.RestartPriceServer)
+		priceGroup := rootGroup.Group("/price")
+		{
+			priceGroup.POST("/restart", service.RestartPriceServer)
+		}
+
+		erc20Group := rootGroup.Group("/erc20")
+		{
+			erc20Group.GET("/")
+		}
+
+		dexGroup := rootGroup.Group("/dex")
+		{
+			dexGroup.POST("/getPair", service.GetPair)
+		}
 
 	}
 
