@@ -10,6 +10,7 @@ import (
 	"interest-arbitrage/model"
 	"interest-arbitrage/model/query"
 	"interest-arbitrage/server"
+	"interest-arbitrage/utils"
 )
 
 // /path/to/abigen --abi=/path/to/YourContractABI.json --pkg=main --out=/path/to/YourContract.go
@@ -33,5 +34,9 @@ func GetPair(c *gin.Context) {
 		return
 	}
 
-	model.Success(c, result.String())
+	if utils.IsZeroAddress(result.String()) {
+		model.Success(c, nil)
+	} else {
+		model.Success(c, result.String())
+	}
 }

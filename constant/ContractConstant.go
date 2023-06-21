@@ -4,6 +4,8 @@ import "interest-arbitrage/model"
 
 var ContractInfos = make([]*model.ContractInfo, 0)
 
+const ZeroAddress = "0x0000000000000000000000000000000000000000"
+
 const (
 	Factory = "PairFactory"
 	Dex     = "MyDex"
