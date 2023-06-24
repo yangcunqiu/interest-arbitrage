@@ -1,8 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/locales/zh"
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
+	zh2 "github.com/go-playground/validator/v10/translations/zh"
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -10,11 +16,14 @@ import (
 	"interest-arbitrage/global"
 	"interest-arbitrage/model"
 	"interest-arbitrage/model/entity"
+	"interest-arbitrage/model/request"
 	"interest-arbitrage/router"
 	"interest-arbitrage/server"
 	"interest-arbitrage/utils"
 	"log"
+	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -25,7 +34,47 @@ func main() {
 	_ = initNode()
 	// initPrice(node)
 	initABI()
+	initTran()
 	initRouter()
+}
+
+// 初始化validate的中文翻译器
+func initTran() {
+	// 创建翻译器
+	uni := ut.New(zh.New())
+	// 获取中文简体翻译器
+	trans, _ := uni.GetTranslator("zh")
+	// 判断gin默认的校验引擎是不是validate
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		// 注册自定义tag校验
+		_ = v.RegisterValidation("IsAddress", request.IsAddress)
+		// 注册自定义tag翻译
+		_ = v.RegisterTranslation("IsAddress", trans, func(ut ut.Translator) error {
+			return ut.Add("IsAddress", model.AddressNotBlankOrNotAddress.Message, true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("IsAddress")
+			return t
+		})
+
+		// 注册中文简体翻译器
+		_ = zh2.RegisterDefaultTranslations(v, trans)
+		// 注册func, 获取struct中自定义的tag (label), 在输出时会将label的值作为字段名
+		v.RegisterTagNameFunc(func(field reflect.StructField) string {
+			jsonName := field.Tag.Get("json")
+			if jsonName == "" {
+				jsonName = field.Name
+			} else {
+				jsonName = strings.Split(jsonName, ",")[0]
+			}
+
+			name := field.Tag.Get("label")
+			if name == "" {
+				return jsonName
+			}
+			return name + fmt.Sprintf("[%v]", jsonName)
+		})
+	}
+	global.Trans = trans
 }
 
 func initABI() {
@@ -121,7 +170,7 @@ func initDB() {
 	sqlDB.SetConnMaxLifetime(time.Duration(global.Config.Mysql.ConnMaxLifetime) * time.Millisecond)
 	global.DB = db
 	// 同步表结构
-	syncTable()
+	//syncTable()
 }
 
 func syncTable() {

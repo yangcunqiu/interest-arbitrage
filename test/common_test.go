@@ -19,7 +19,11 @@ func TestBigInt(t *testing.T) {
 	fB := new(big.Float).SetInt(bigB)
 	sub := new(big.Float).Sub(fB, fA)
 	quo := new(big.Float).Quo(sub, fA)
-	resulta := quo.Mul(quo, big.NewFloat(100))
-	sprintf := fmt.Sprintf("%.2f%%", resulta)
+	resultA := quo.Mul(quo, big.NewFloat(100))
+	sprintf := fmt.Sprintf("%.2f%%", resultA)
 	log.Println(sprintf)
+}
+
+func TestFloat(t *testing.T) {
+	fmt.Println(100 * (1 - 1/100.0))
 }

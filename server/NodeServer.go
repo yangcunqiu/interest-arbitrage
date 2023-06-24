@@ -12,7 +12,7 @@ var UsableNodeServer *NodeServer
 type NodeServer struct {
 	url     string
 	Client  *ethclient.Client
-	chainId *big.Int
+	ChainId *big.Int
 }
 
 func GetDefaultNodeServer(url string) *NodeServer {
@@ -28,8 +28,8 @@ func (n *NodeServer) Start() {
 	}
 	chainID, err := client.ChainID(context.Background())
 	if err != nil {
-		log.Fatalf("failed to get chainId: %v", err)
+		log.Fatalf("failed to get ChainId: %v", err)
 	}
 	n.Client = client
-	n.chainId = chainID
+	n.ChainId = chainID
 }

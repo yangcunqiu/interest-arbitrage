@@ -321,7 +321,7 @@
         "type": "address"
       }
     ],
-    "name": "swapEactTokenForTokens",
+    "name": "swapExactTokenForTokens",
     "outputs": [
       {
         "internalType": "uint256[]",

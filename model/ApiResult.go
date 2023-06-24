@@ -11,10 +11,15 @@ type ApiResult struct {
 	Data    any    `json:"data,omitempty"`
 }
 
-func Success(c *gin.Context, data any) {
+func Success(c *gin.Context, data any, message ...string) {
+	msg := "success"
+	for _, str := range message {
+		msg += " " + str
+	}
+
 	c.JSON(http.StatusOK, ApiResult{
 		Code:    200,
-		Message: "success",
+		Message: msg,
 		Data:    data,
 	})
 }

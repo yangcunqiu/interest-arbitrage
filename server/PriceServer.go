@@ -55,7 +55,7 @@ func (p *PriceServer) Start() {
 
 	// 获取chainLink价格
 	for _, config := range p.chainLinkConfig {
-		go getChainLinkPrice(p.node.Client, p.node.chainId, config, p.stop)
+		go getChainLinkPrice(p.node.Client, p.node.ChainId, config, p.stop)
 	}
 }
 
