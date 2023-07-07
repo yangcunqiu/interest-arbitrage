@@ -106,3 +106,42 @@ func getSwapPath(startAddress string, endAddress string) []common.Address {
 	swapPaths[1] = common.HexToAddress(endAddress)
 	return swapPaths
 }
+
+// RemoveLiquidity 移除流动性
+func RemoveLiquidity(c *gin.Context) {
+	removeReq := request.RemoveLiquidityRequest{}
+	err := c.ShouldBindJSON(&removeReq)
+	if err != nil {
+		model.Fail(c, model.ParamBindError, handler.SimpleValidateErrorTran(err))
+		return
+	}
+
+	dex, err := utils.GetDexContract()
+	if err != nil {
+		model.Fail(c, model.GetContractError, err.Error())
+		return
+	}
+
+	opts, err := utils.BuildTransactOpts(global.Env.PrivateKey)
+	if err != nil {
+		model.Fail(c, model.BuildTransactOptsError, err.Error())
+		return
+	}
+
+	tx, err := dex.RemoveLiquidity(
+		opts,
+		common.HexToAddress(removeReq.TokenA),
+		common.HexToAddress(removeReq.TokenB),
+		big.NewInt(int64(removeReq.Liquidity)),
+		big.NewInt(int64(removeReq.AmountAMin)),
+		big.NewInt(int64(removeReq.AMountBMin)),
+		common.HexToAddress(removeReq.TokenTo),
+	)
+
+	if err != nil {
+		model.Fail(c, model.CallContractError, err.Error())
+		return
+	}
+
+	model.Success(c, tx.Hash())
+}

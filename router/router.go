@@ -42,6 +42,7 @@ func RegisterRouter(r *gin.Engine) {
 			txGroup := dexGroup.Group("/tx")
 			txGroup.POST("/addLiquidity", service.AddLiquidity)
 			txGroup.POST("/swapExactTokenForTokens", service.SwapExactTokenForTokens)
+			txGroup.POST("/removeLiquidity", service.RemoveLiquidity)
 		}
 
 	}
