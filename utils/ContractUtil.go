@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"interest-arbitrage/constant"
+	allot2 "interest-arbitrage/contract/allot"
 	dex2 "interest-arbitrage/contract/dex"
 	c_erc20 "interest-arbitrage/contract/erc20"
 	c_factory "interest-arbitrage/contract/factory"
@@ -54,6 +55,15 @@ func GetFactoryContract() (*c_factory.Factory, error) {
 		return nil, err
 	}
 	return factory, nil
+}
+
+func GetDexTokenAllot() (*allot2.Allot, error) {
+	allotAddress := common.HexToAddress(global.ContractInfoMap[constant.ALLOT].Address)
+	allot, err := allot2.NewAllot(allotAddress, server.UsableNodeServer.Client)
+	if err != nil {
+		return nil, err
+	}
+	return allot, nil
 }
 
 func IsZeroAddress(address string) bool {

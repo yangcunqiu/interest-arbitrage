@@ -32,7 +32,9 @@ func RegisterRouter(r *gin.Engine) {
 			utilGroup := dexGroup.Group("/util")
 			utilGroup.POST("/getPair", service.GetPair)
 			utilGroup.GET("/getPairInfo", service.GetPairInfo)
-			dexGroup.POST("/createPair", service.CreatePair)
+			utilGroup.POST("/createPair", service.CreatePair)
+			utilGroup.GET("/getPoolInfoList", service.GetPoolInfoList)
+			utilGroup.GET("/getPoolInfo", service.GetPoolInfo)
 
 			priceGroup := dexGroup.Group("/price")
 			priceGroup.POST("/quote", service.Quote)
@@ -43,6 +45,12 @@ func RegisterRouter(r *gin.Engine) {
 			txGroup.POST("/addLiquidity", service.AddLiquidity)
 			txGroup.POST("/swapExactTokenForTokens", service.SwapExactTokenForTokens)
 			txGroup.POST("/removeLiquidity", service.RemoveLiquidity)
+
+			allotGroup := dexGroup.Group("/allot")
+			allotGroup.POST("/addAllot", service.AddAllot)
+			allotGroup.GET("/getPending", service.GetPending)
+			allotGroup.GET("/deposit", service.Deposit)
+			allotGroup.GET("/withdraw", service.Withdraw)
 		}
 
 	}

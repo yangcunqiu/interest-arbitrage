@@ -13,6 +13,7 @@ import (
 	"interest-arbitrage/server"
 	"interest-arbitrage/utils"
 	"math/big"
+	"strconv"
 	"time"
 )
 
@@ -170,4 +171,49 @@ func CreatePair(c *gin.Context) {
 	}
 
 	model.Success(c, receipt)
+}
+
+// GetPoolInfoList 查看MyDexTokenAllot合约所有lp池
+func GetPoolInfoList(c *gin.Context) {
+	allot, err := utils.GetDexTokenAllot()
+	if err != nil {
+		model.Fail(c, model.GetContractError, err.Error())
+		return
+	}
+
+	var pools []vo.PoolVO
+	for i := 0; ; i++ {
+		poolInfo, err := allot.PoolInfos(&bind.CallOpts{}, big.NewInt(int64(i)))
+		if err != nil {
+			break
+		}
+
+		if utils.IsZeroAddress(poolInfo.LpToken.String()) {
+			break
+		}
+
+		pool := vo.PoolVO{
+			Pid:     uint(i),
+			LpToken: poolInfo.LpToken.String(),
+		}
+		pools = append(pools, pool)
+	}
+
+	model.Success(c, pools)
+}
+
+// GetPoolInfo 获取lp池信息
+func GetPoolInfo(c *gin.Context) {
+	pid, _ := strconv.Atoi(c.Query("pid"))
+	allot, err := utils.GetDexTokenAllot()
+	if err != nil {
+		model.Fail(c, model.GetContractError, err.Error())
+		return
+	}
+	poolInfo, err := allot.PoolInfos(&bind.CallOpts{}, big.NewInt(int64(pid)))
+	if err != nil {
+		model.Fail(c, model.CallContractError, err.Error())
+		return
+	}
+	model.Success(c, poolInfo)
 }
