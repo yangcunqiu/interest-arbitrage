@@ -9,16 +9,19 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	zh2 "github.com/go-playground/validator/v10/translations/zh"
+	"github.com/robfig/cron/v3"
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"interest-arbitrage/constant"
+	cron2 "interest-arbitrage/cron"
 	"interest-arbitrage/global"
 	"interest-arbitrage/model"
 	"interest-arbitrage/model/entity"
 	"interest-arbitrage/model/request"
 	"interest-arbitrage/router"
 	"interest-arbitrage/server"
+	"interest-arbitrage/service"
 	"interest-arbitrage/utils"
 	"log"
 	"reflect"
@@ -35,7 +38,20 @@ func main() {
 	// initPrice(node)
 	initABI()
 	initTran()
+	initBlockListener()
+	initCron()
 	initRouter()
+}
+
+func initBlockListener() {
+	service.ListenerETHBridgeLockMts()
+	service.ListenerMTSBridgeLockMTS()
+}
+
+func initCron() {
+	c := cron.New()
+	cron2.RegisterCronFunc(c)
+	c.Start()
 }
 
 // 初始化validate的中文翻译器
@@ -144,6 +160,13 @@ func initNode() *server.NodeServer {
 	nodeServer := server.GetDefaultNodeServer(global.Env.NodeUrl)
 	nodeServer.Start()
 	server.UsableNodeServer = nodeServer
+
+	ETHNodeServer := server.GetDefaultNodeServer(global.Env.ETHNodeUrl)
+	ETHNodeServer.Start()
+	server.ETHNodeServer = ETHNodeServer
+	MTSNodeServer := server.GetDefaultNodeServer(global.Env.MTSNodeUrl)
+	MTSNodeServer.Start()
+	server.MTSNodeServer = MTSNodeServer
 	return nodeServer
 }
 
@@ -170,7 +193,7 @@ func initDB() {
 	sqlDB.SetConnMaxLifetime(time.Duration(global.Config.Mysql.ConnMaxLifetime) * time.Millisecond)
 	global.DB = db
 	// 同步表结构
-	//syncTable()
+	syncTable()
 }
 
 func syncTable() {
@@ -181,6 +204,7 @@ func syncTable() {
 		&entity.UniswapV2TokenCumulativeLast{},
 		&entity.Price{},
 		&entity.ChainInfo{},
+		&entity.BridgeLockInfo{},
 	)
 	if err != nil {
 		panic(err)

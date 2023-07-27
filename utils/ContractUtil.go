@@ -9,11 +9,15 @@ import (
 	"interest-arbitrage/constant"
 	allot2 "interest-arbitrage/contract/allot"
 	dex2 "interest-arbitrage/contract/dex"
+	"interest-arbitrage/contract/eb"
 	c_erc20 "interest-arbitrage/contract/erc20"
 	c_factory "interest-arbitrage/contract/factory"
+	"interest-arbitrage/contract/mb"
 	pair2 "interest-arbitrage/contract/pair"
+	"interest-arbitrage/contract/wmts"
 	"interest-arbitrage/global"
 	"interest-arbitrage/server"
+	"math/big"
 	"strings"
 )
 
@@ -70,7 +74,7 @@ func IsZeroAddress(address string) bool {
 	return bytes.Equal([]byte(address), []byte(constant.ZeroAddress))
 }
 
-func BuildTransactOpts(privateKeys ...string) (*bind.TransactOpts, error) {
+func BuildTransactOpts(chainId *big.Int, privateKeys ...string) (*bind.TransactOpts, error) {
 	var opts *bind.TransactOpts
 	// 签名
 	if len(privateKeys) > 0 {
@@ -84,7 +88,7 @@ func BuildTransactOpts(privateKeys ...string) (*bind.TransactOpts, error) {
 			return nil, err
 		}
 
-		opts, err = bind.NewKeyedTransactorWithChainID(auth, server.UsableNodeServer.ChainId)
+		opts, err = bind.NewKeyedTransactorWithChainID(auth, chainId)
 		if err != nil {
 			return nil, err
 		}
@@ -99,4 +103,31 @@ func BuildTransactOpts(privateKeys ...string) (*bind.TransactOpts, error) {
 		opts = &bind.TransactOpts{}
 	}
 	return opts, nil
+}
+
+func GetETHBridge() (*eb.ETHBridge, error) {
+	toAddress := common.HexToAddress(global.ContractInfoMap[constant.ETHBridge].Address)
+	ethBridge, err := eb.NewETHBridge(toAddress, server.ETHNodeServer.Client)
+	if err != nil {
+		return nil, err
+	}
+	return ethBridge, nil
+}
+
+func GetMTSBridge() (*mb.MTSBridge, error) {
+	toAddress := common.HexToAddress(global.ContractInfoMap[constant.MTSBridge].Address)
+	mtsBridge, err := mb.NewMTSBridge(toAddress, server.MTSNodeServer.Client)
+	if err != nil {
+		return nil, err
+	}
+	return mtsBridge, nil
+}
+
+func GetWMTS() (*wmts.Wmts, error) {
+	toAddress := common.HexToAddress(global.ContractInfoMap[constant.WMTS].Address)
+	wmtsToken, err := wmts.NewWmts(toAddress, server.ETHNodeServer.Client)
+	if err != nil {
+		return nil, err
+	}
+	return wmtsToken, nil
 }

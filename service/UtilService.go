@@ -138,7 +138,7 @@ func CreatePair(c *gin.Context) {
 		return
 	}
 
-	opts, err := utils.BuildTransactOpts(global.Env.PrivateKey)
+	opts, err := utils.BuildTransactOpts(server.UsableNodeServer.ChainId, global.Env.PrivateKey)
 	if err != nil {
 		model.Fail(c, model.BuildTransactOptsError, err.Error())
 		return

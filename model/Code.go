@@ -13,6 +13,8 @@ var (
 	BuildTransactOptsError      = ErrorCode{getContractCode(), "构建交易参数失败:"}
 	WaitTransactionPackError    = ErrorCode{getContractCode(), "等待交易打包失败:"}
 	WaitTransactionPackTimeOut  = ErrorCode{getContractCode(), "等待交易打包超时:"}
+	LockMtsError                = ErrorCode{getContractCode(), "锁定mts失败:"}
+	LockMtsNotEnough            = ErrorCode{getContractCode(), "锁定mts不足:"}
 )
 
 func getCommonCode() int {

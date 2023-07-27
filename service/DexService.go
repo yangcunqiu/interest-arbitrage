@@ -7,6 +7,7 @@ import (
 	"interest-arbitrage/handler"
 	"interest-arbitrage/model"
 	"interest-arbitrage/model/request"
+	"interest-arbitrage/server"
 	"interest-arbitrage/utils"
 	"math/big"
 )
@@ -32,7 +33,7 @@ func AddLiquidity(c *gin.Context) {
 	}
 
 	// 构建opts
-	opts, err := utils.BuildTransactOpts(global.Env.PrivateKey)
+	opts, err := utils.BuildTransactOpts(server.UsableNodeServer.ChainId, global.Env.PrivateKey)
 	if err != nil {
 		model.Fail(c, model.BuildTransactOptsError, err.Error())
 		return
@@ -78,7 +79,7 @@ func SwapExactTokenForTokens(c *gin.Context) {
 	}
 
 	// 构建opts
-	opts, err := utils.BuildTransactOpts(global.Env.PrivateKey)
+	opts, err := utils.BuildTransactOpts(server.UsableNodeServer.ChainId, global.Env.PrivateKey)
 	if err != nil {
 		model.Fail(c, model.BuildTransactOptsError, err.Error())
 		return
@@ -122,7 +123,7 @@ func RemoveLiquidity(c *gin.Context) {
 		return
 	}
 
-	opts, err := utils.BuildTransactOpts(global.Env.PrivateKey)
+	opts, err := utils.BuildTransactOpts(server.UsableNodeServer.ChainId, global.Env.PrivateKey)
 	if err != nil {
 		model.Fail(c, model.BuildTransactOptsError, err.Error())
 		return

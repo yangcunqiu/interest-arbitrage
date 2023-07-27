@@ -8,6 +8,7 @@ import (
 	"interest-arbitrage/handler"
 	"interest-arbitrage/model"
 	"interest-arbitrage/model/request"
+	"interest-arbitrage/server"
 	"interest-arbitrage/utils"
 	"math/big"
 	"strconv"
@@ -28,7 +29,7 @@ func AddAllot(c *gin.Context) {
 		return
 	}
 
-	opts, err := utils.BuildTransactOpts(global.Env.PrivateKey)
+	opts, err := utils.BuildTransactOpts(server.UsableNodeServer.ChainId, global.Env.PrivateKey)
 	if err != nil {
 		model.Fail(c, model.BuildTransactOptsError, err.Error())
 		return
@@ -80,7 +81,7 @@ func Deposit(c *gin.Context) {
 		return
 	}
 
-	opts, err := utils.BuildTransactOpts(global.Env.PrivateKey)
+	opts, err := utils.BuildTransactOpts(server.UsableNodeServer.ChainId, global.Env.PrivateKey)
 	if err != nil {
 		model.Fail(c, model.BuildTransactOptsError, err.Error())
 		return
@@ -106,7 +107,7 @@ func Withdraw(c *gin.Context) {
 		return
 	}
 
-	opts, err := utils.BuildTransactOpts(global.Env.PrivateKey)
+	opts, err := utils.BuildTransactOpts(server.UsableNodeServer.ChainId, global.Env.PrivateKey)
 	if err != nil {
 		model.Fail(c, model.BuildTransactOptsError, err.Error())
 		return

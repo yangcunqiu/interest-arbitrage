@@ -3,7 +3,10 @@ package test
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/big"
+	"runtime"
+	"sync"
 	"testing"
 )
 
@@ -26,4 +29,27 @@ func TestBigInt(t *testing.T) {
 
 func TestFloat(t *testing.T) {
 	fmt.Println(100 * (1 - 1/100.0))
+}
+
+var wg = sync.WaitGroup{}
+
+func TestCommon(t *testing.T) {
+	taskCount := math.MaxInt64
+
+	ch := make(chan bool, 3)
+	for i := 0; i < taskCount; i++ {
+		wg.Add(1)
+		ch <- true
+		go func(i int) {
+			fmt.Println("go func ", i, " goroutine num ", runtime.NumGoroutine())
+			<-ch
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+}
+
+func TestBit(t *testing.T) {
+	fmt.Println(1 << 2)
+	fmt.Println(4 >> 2)
 }

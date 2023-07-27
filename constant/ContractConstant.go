@@ -7,12 +7,15 @@ var ContractInfos = make([]*model.ContractInfo, 0)
 const ZeroAddress = "0x0000000000000000000000000000000000000000"
 
 const (
-	Factory = "PairFactory"
-	Dex     = "MyDex"
-	HL      = "HL"
-	ML      = "ML"
-	MDT     = "MDT"
-	ALLOT   = "ALLOT"
+	Factory   = "PairFactory"
+	Dex       = "MyDex"
+	HL        = "HL"
+	ML        = "ML"
+	MDT       = "MDT"
+	ALLOT     = "ALLOT"
+	ETHBridge = "ETHBridge"
+	MTSBridge = "MTSBridge"
+	WMTS      = "WMTS"
 )
 
 var ContractNames = []string{
@@ -22,6 +25,9 @@ var ContractNames = []string{
 	"ML",
 	"MDT",
 	"ALLOT",
+	"ETHBridge",
+	"MTSBridge",
+	"WMTS",
 }
 
 // ContractAddress local
@@ -32,6 +38,9 @@ var ContractAddress = []string{
 	"0x5FbDB2315678afecb367f032d93F642f64180aa3",
 	"0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9",
 	"0x1613beB3B2C4f22Ee086B2b38C1476A3cE7f78E8",
+	"0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+	"0x231F68F1b6afD8c3f44A5C97d08666aCCF786363",
+	"0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
 }
 
 // ContractAddress aliyun
@@ -49,6 +58,9 @@ var ContractABIPaths = []string{
 	"abi/ML.json",
 	"abi/MDT.json",
 	"abi/MyDexTokenAllot.json",
+	"abi/ETHBridge.json",
+	"abi/MTSBridge.json",
+	"abi/WMTS.json",
 }
 
 func init() {

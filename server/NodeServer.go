@@ -8,6 +8,8 @@ import (
 )
 
 var UsableNodeServer *NodeServer
+var MTSNodeServer *NodeServer
+var ETHNodeServer *NodeServer
 
 type NodeServer struct {
 	url     string
@@ -32,4 +34,5 @@ func (n *NodeServer) Start() {
 	}
 	n.Client = client
 	n.ChainId = chainID
+	log.Printf("success to connect rpc url: %v, chainId: %v", n.url, n.ChainId)
 }

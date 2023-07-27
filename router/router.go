@@ -53,6 +53,15 @@ func RegisterRouter(r *gin.Engine) {
 			allotGroup.GET("/withdraw", service.Withdraw)
 		}
 
+		bridgeGroup := rootGroup.Group("/bridge")
+		{
+			bridgeGroup.POST("/mts/lock", service.LockMtsInMTS)
+			bridgeGroup.POST("/mts/unlock", service.UnLockMtsInMTS)
+			bridgeGroup.POST("/eth/lock", service.LockMtsInETH)
+			bridgeGroup.POST("/eth/unlock", service.UnLockMtsInETH)
+			bridgeGroup.POST("/eth/wmts/mint", service.MintWMTS)
+		}
+
 	}
 
 }
